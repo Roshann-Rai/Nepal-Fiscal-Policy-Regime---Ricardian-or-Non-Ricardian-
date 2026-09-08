@@ -39,29 +39,32 @@ plot1 <- ggplot(df1, aes(year)) +
 plot1
 
 # Structural Breaks Bai - Perron
-break_yr <- breakpoints(pb_gdp ~ debt_gdp, data = df1, h = 0.15)
+break_yr <- breakpoints(pb_gdp ~ debt_gdp, data = df1, h = 0.20)   # or h = 0.25
 summary(break_yr)
 plot(break_yr)
 
 break_forced <- breakpoints(break_yr, breaks = 1)
+breakdates(break_forced)
 df1$year[break_forced$breakpoints]
-confint(break_forced, breaks = 1)
+confint(break_yr)
 
 # Chow test
 break_index <- which(df1$year == 2016)
 chow_test <- sctest(pb_gdp ~ debt_gdp, type = "Chow", data = df1, point = break_index)
 print(chow_test)
 
-# years_to_test <- c(2015, 2016, 2017)
-# results <- sapply(years_to_test, function(yr) {
-#   mydata$brk <- as.numeric(mydata$year >= yr)
-#   full    <- lm(y ~ x1 + x2 * brk, data = mydata)
-#   reduced <- lm(y ~ x1 + x2, data = mydata)
-#   a <- anova(reduced, full)
-#   c(F = a$F[2], p = a$`Pr(>F)`[2])
-# })
-# colnames(results) <- years_to_test
-# results
+sctest(Fstats(pb_gdp ~ debt_gdp, data = df1, from = 0.15, to = 0.85), type = "supF")
+
+t <- Fstats(pb_gdp ~ debt_gdp, data = df1, from = 0.15, to = 0.85)
+plot(t)
+# break_index <- which(df1$year == 2017)
+# chow_test <- sctest(pb_gdp ~ debt_gdp, type = "Chow", data = df1, point = break_index)
+# print(chow_test)
+
+# break_index <- which(df1$year == 2018)
+# chow_test <- sctest(pb_gdp ~ debt_gdp, type = "Chow", data = df1, point = break_index)
+# print(chow_test)
+
 
 
 
