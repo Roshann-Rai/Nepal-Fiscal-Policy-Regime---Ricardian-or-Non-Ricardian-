@@ -3,11 +3,11 @@ library(dplyr)
 library(xts)
 library(strucchange)
 
-setwd("D:/Roshan/Nepal-Fiscal-Policy-Regime---Ricardian-or-Non-Ricardian-/Data")
+# setwd("https://github.com/Roshann-Rai/Nepal-Fiscal-Policy-Regime---Ricardian-or-Non-Ricardian-/Data")
 
 # Data
-public_finance <- read.csv("data.csv")
-debt <- read.csv("debt.csv")
+public_finance <- read.csv("https://raw.githubusercontent.com/Roshann-Rai/Nepal-Fiscal-Policy-Regime---Ricardian-or-Non-Ricardian-/refs/heads/main/Data/data.csv")
+debt <- read.csv("https://raw.githubusercontent.com/Roshann-Rai/Nepal-Fiscal-Policy-Regime---Ricardian-or-Non-Ricardian-/refs/heads/main/Data/debt.csv")
 
 # Merge data
 df <- public_finance %>%
@@ -37,6 +37,12 @@ plot1 <- ggplot(df1, aes(year)) +
   geom_line(aes(y = debt_gdp, color = "red"))
 
 plot1
+# Dummy Variable
+df1 <- df1 %>%
+  mutate(break_yr = ifelse(year > 2015, 1, 0))
+
+# Check the data
+table(df1$year, df1$break_yr)
 
 # Structural Breaks Bai - Perron
 break_yr <- breakpoints(pb_gdp ~ debt_gdp, data = df1, h = 0.20)   # or h = 0.25
@@ -57,6 +63,10 @@ sctest(Fstats(pb_gdp ~ debt_gdp, data = df1, from = 0.15, to = 0.85), type = "su
 
 t <- Fstats(pb_gdp ~ debt_gdp, data = df1, from = 0.15, to = 0.85)
 plot(t)
+
+# Lag length Selection
+
+
 # break_index <- which(df1$year == 2017)
 # chow_test <- sctest(pb_gdp ~ debt_gdp, type = "Chow", data = df1, point = break_index)
 # print(chow_test)
