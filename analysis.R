@@ -40,7 +40,7 @@ plot1
 
 # Structural Breaks Bai - Perron
 ## h = 0.2 means 20% of sample are included in 1 segment
-break_yr <- breakpoints(pb_gdp ~ debt_gdp, data = df1, h = 0.20)   # or h = 0.25
+break_yr <- breakpoints(debt_gdp ~ pb_gdp, data = df1, h = 0.20)   # or h = 0.25
 summary(break_yr)
 plot(break_yr)
 
@@ -56,7 +56,7 @@ print(chow_test)
 
 sctest(Fstats(pb_gdp ~ debt_gdp, data = df1, from = 0.15, to = 0.85), type = "supF")
 
-t <- Fstats(pb_gdp ~ debt_gdp, data = df1, from = 0.15, to = 0.85)
+t <- Fstats(pb_gdp ~ debt_gdp, data = df1, from = 0.15, to = 0.85) 
 plot(t)
 
 # Dummy Variable
@@ -81,8 +81,18 @@ df2 <- df1 %>%
 # Lag length Selection
 # Because of fewer observations we select lag = 1.
 
+# Model
+pb <- lm(pb_gdp ~ break_yr + pb_lag + debt_lag + pb_dummy + debt_dummy, data = df2)
+debt <- lm(debt_gdp ~ break_yr + pb_lag + debt_lag + pb_dummy + debt_dummy, data = df2)
+summary(pb)
+summary(debt)
+pb_nobreak <- lm(pb_gdp ~ pb_lag + debt_lag, data = df2)
 
+# summary(pb_nobreak)
 
+# anova(pb, pb_nobreak)
+
+# anova(pb_nobreak, pb)
 # break_index <- which(df1$year == 2017)
 # chow_test <- sctest(pb_gdp ~ debt_gdp, type = "Chow", data = df1, point = break_index)
 # print(chow_test)
@@ -91,7 +101,28 @@ df2 <- df1 %>%
 # chow_test <- sctest(pb_gdp ~ debt_gdp, type = "Chow", data = df1, point = break_index)
 # print(chow_test)
 
+# Coefficients
+get_regime_coefs <- function(fit, regime = c("pre","post")) {
+  regime <- match.arg(regime)
+  b <- coef(fit)
+  const    <- b["(Intercept)"]
+  pb_l1    <- b["pb_lag"]
+  debt_l1  <- b["debt_lag"]
+  if (regime == "post") {
+    const   <- const   + b["break_yr"]
+    pb_l1   <- pb_l1   + b["pb_dummy"]
+    debt_l1 <- debt_l1 + b["debt_dummy"]
+  }
+  c(const = const, pb_lag = pb_l1, debt_lag = debt_l1)
+}
 
+# Balance equation, both regimes
+coefs_s_pre  <- get_regime_coefs(fit_s, "pre")
+coefs_s_post <- get_regime_coefs(fit_s, "post")
+
+# Debt equation, both regimes
+coefs_w_pre  <- get_regime_coefs(fit_w, "pre")
+coefs_w_post <- get_regime_coefs(fit_w, "post")
 
 
 
