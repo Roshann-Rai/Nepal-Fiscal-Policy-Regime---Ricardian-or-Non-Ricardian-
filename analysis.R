@@ -86,7 +86,8 @@ pb <- lm(pb_gdp ~ break_yr + pb_lag + debt_lag + pb_dummy + debt_dummy, data = d
 debt <- lm(debt_gdp ~ break_yr + pb_lag + debt_lag + pb_dummy + debt_dummy, data = df2)
 summary(pb)
 summary(debt)
-pb_nobreak <- lm(pb_gdp ~ pb_lag + debt_lag, data = df2)
+
+# pb_nobreak <- lm(pb_gdp ~ pb_lag + debt_lag, data = df2)
 
 # summary(pb_nobreak)
 
@@ -101,34 +102,31 @@ pb_nobreak <- lm(pb_gdp ~ pb_lag + debt_lag, data = df2)
 # chow_test <- sctest(pb_gdp ~ debt_gdp, type = "Chow", data = df1, point = break_index)
 # print(chow_test)
 
-# Coefficients
-get_regime_coefs <- function(fit, regime = c("pre","post")) {
-  regime <- match.arg(regime)
+# Coefficnents
+coefs <- function(fit) {
   b <- coef(fit)
-  const    <- b["(Intercept)"]
-  pb_l1    <- b["pb_lag"]
-  debt_l1  <- b["debt_lag"]
-  if (regime == "post") {
-    const   <- const   + b["break_yr"]
-    pb_l1   <- pb_l1   + b["pb_dummy"]
-    debt_l1 <- debt_l1 + b["debt_dummy"]
-  }
-  c(const = const, pb_lag = pb_l1, debt_lag = debt_l1)
+  data.frame(
+    period = c("Pre_2016", "Post_2016"),
+    Intercept = c(
+      b["(Intercept)"],
+      b["(Intercept)"]+b["break_yr"]
+    ),
+    pb = c(
+      b["pb_lag"],
+      b["pb_lag"]+b["pb_dummy"]
+    ),
+    debt = c(
+      b["debt_lag"],
+      b["debt_lag"]+b["debt_dummy"]
+    )
+  )
 }
 
-# Balance equation, both regimes
-coefs_s_pre  <- get_regime_coefs(fit_s, "pre")
-coefs_s_post <- get_regime_coefs(fit_s, "post")
+pb_coefs <- coefs(pb)
+debt_coefs <- coefs(debt)
 
-# Debt equation, both regimes
-coefs_w_pre  <- get_regime_coefs(fit_w, "pre")
-coefs_w_post <- get_regime_coefs(fit_w, "post")
-
-
-
-
-
-
+pb_coefs
+debt_coefs
 
 
 
