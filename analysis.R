@@ -16,13 +16,14 @@ df <- public_finance %>%
   rename(year = FY1) %>%
   left_join(debt, by = "year") 
 
-str(df)
+df
 
 # Data Structure
 df$year = as.integer(df$year)
 
 df <- df%>%
   mutate(across(c(Recurrent, Capital, Interest, Revenue, GDP), ~ as.numeric(gsub(",", "", .x))))
+df
 
 # Required Variables
 df1 <- df%>%
@@ -31,19 +32,35 @@ df1 <- df%>%
     pb_gdp = pb/GDP,
     debt_gdp = lag(debt)/GDP
   ) %>%
-  filter(year >= 2003)
+  filter(year >= 2003) %>%
+  select(year, pb)
+
+view(df1)
 
 df2 <- data %>%
   rename(year = FY1) %>%
   mutate(pb = -(PB_1 - grant)) %>%
   select(year, pb)
 
-head(df2)
+view(df2)
 
+# Merged data
+merged_df <- bind_rows(df2, df1) 
 
+merged_df1 <- merged_df %>%
+  left_join(debt, by = "year") %>%
+  left_join(gdp, by = "year")
+
+view(merged_df1)
+
+# Required data
+merged_df2 <- merged_df1 %>%
+  mutate(pb_gdp = pb/GDP, debt_gdp = lag(debt)/GDP)
+
+view(merged_df2)
 
 # Plot
-plot1 <- ggplot(df1, aes(year)) +
+plot1 <- ggplot(merged_df2, aes(year)) +
   # geom_line(aes(y = pb_gdp, color = "black")) +
   geom_line(aes(y = debt_gdp, color = "red"))
 
