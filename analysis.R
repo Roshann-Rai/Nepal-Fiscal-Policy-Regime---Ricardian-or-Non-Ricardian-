@@ -8,6 +8,8 @@ library(strucchange)
 # Data
 public_finance <- read.csv("https://raw.githubusercontent.com/Roshann-Rai/Nepal-Fiscal-Policy-Regime---Ricardian-or-Non-Ricardian-/refs/heads/main/Data/data.csv")
 debt <- read.csv("https://raw.githubusercontent.com/Roshann-Rai/Nepal-Fiscal-Policy-Regime---Ricardian-or-Non-Ricardian-/refs/heads/main/Data/debt.csv")
+data <- read.csv("https://raw.githubusercontent.com/Roshann-Rai/Nepal-Fiscal-Policy-Regime---Ricardian-or-Non-Ricardian-/refs/heads/main/Data/pb.csv")
+gdp <- read.csv("https://raw.githubusercontent.com/Roshann-Rai/Nepal-Fiscal-Policy-Regime---Ricardian-or-Non-Ricardian-/refs/heads/main/Data/gdp.csv")
 
 # Merge data
 df <- public_finance %>%
@@ -30,6 +32,15 @@ df1 <- df%>%
     debt_gdp = lag(debt)/GDP
   ) %>%
   filter(year >= 2003)
+
+df2 <- data %>%
+  rename(year = FY1) %>%
+  mutate(pb = -(PB_1 - grant)) %>%
+  select(year, pb)
+
+head(df2)
+
+
 
 # Plot
 plot1 <- ggplot(df1, aes(year)) +
