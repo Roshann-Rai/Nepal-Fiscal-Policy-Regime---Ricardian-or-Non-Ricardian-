@@ -68,18 +68,18 @@ plot1
 
 # Structural Breaks Bai - Perron
 ## h = 0.2 means 20% of sample are included in 1 segment
-break_yr <- breakpoints(debt_gdp ~ pb_gdp, data = df1, h = 0.20)   # or h = 0.25
+break_yr <- breakpoints(debt_gdp ~ pb_gdp, data = merged_df2, h = 0.20)   # or h = 0.25
 summary(break_yr)
 plot(break_yr)
 
 break_forced <- breakpoints(break_yr, breaks = 1)  # Gives 1 break 
 breakdates(break_forced)
-df1$year[break_forced$breakpoints]
+merged_df2$year[break_forced$breakpoints]
 confint(break_yr)
 
 # Chow test
-break_index <- which(df1$year == 2016)
-chow_test <- sctest(pb_gdp ~ debt_gdp, type = "Chow", data = df1, point = break_index)
+break_index <- which(merged_df2$year == 2016)
+chow_test <- sctest(pb_gdp ~ debt_gdp, type = "Chow", data = merged_df2, point = break_index)
 print(chow_test)
 
 sctest(Fstats(pb_gdp ~ debt_gdp, data = df1, from = 0.15, to = 0.85), type = "supF")
@@ -88,15 +88,15 @@ t <- Fstats(pb_gdp ~ debt_gdp, data = df1, from = 0.15, to = 0.85)
 plot(t)
 
 # Dummy Variable
-df1 <- df1 %>%
+merged_df2 <- merged_df2 %>%
   arrange(year) %>%
   mutate(break_yr = ifelse(year > 2015, 1, 0))
 
 # Check the data
-table(df1$year, df1$break_yr)
+table(merged_df2$year, merged_df2$break_yr)
 
 # Required Variables
-df2 <- df1 %>%
+merged_df3 <- merged_df2 %>%
   mutate(
     # Lag variables
     pb_lag = lag(pb_gdp, 1),
@@ -110,8 +110,8 @@ df2 <- df1 %>%
 # Because of fewer observations we select lag = 1.
 
 # Model
-pb <- lm(pb_gdp ~ break_yr + pb_lag + debt_lag + pb_dummy + debt_dummy, data = df2)
-debt <- lm(debt_gdp ~ break_yr + pb_lag + debt_lag + pb_dummy + debt_dummy, data = df2)
+pb <- lm(pb_gdp ~ break_yr + pb_lag + debt_lag + pb_dummy + debt_dummy, data = merged_df3)
+debt <- lm(debt_gdp ~ break_yr + pb_lag + debt_lag + pb_dummy + debt_dummy, data = merged_df3)
 summary(pb)
 summary(debt)
 
@@ -155,32 +155,4 @@ debt_coefs <- coefs(debt)
 
 pb_coefs
 debt_coefs
-
-
-
-
-
-
-
-
-
-# Time series object
-# data_cols <- df1[, c("pb_gdp", "debt_gdp")]
-# finance_ts <- ts(
-#   data = data_cols,
-#   start = df$year,
-#   frequency = 1
-# )
-
-
-
-
-
-
-
-
-
-
-
-
 
