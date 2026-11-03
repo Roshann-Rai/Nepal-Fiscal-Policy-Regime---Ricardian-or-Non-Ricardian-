@@ -45,6 +45,12 @@ df2 <- data %>%
 view(df2)
 
 # Merged data
+df_1996 <- data.frame(
+  year = 1996,
+  pb = NA,
+  debt = 160102.2,
+  GDP = 248913.0
+)
 merged_df <- bind_rows(df2, df1) 
 
 merged_df1 <- merged_df %>%
@@ -53,9 +59,15 @@ merged_df1 <- merged_df %>%
 
 view(merged_df1)
 
+merged_df_1996 <- bind_rows(df_1996, merged_df1)
+view(merged_df_1996)
+
 # Required data
-merged_df2 <- merged_df1 %>%
-  mutate(pb_gdp = pb/GDP, debt_gdp = lag(debt)/GDP)
+merged_df_1996$year <- as.integer(merged_df_1996$year)
+
+merged_df2 <- merged_df_1996 %>%
+  mutate(pb_gdp = pb/GDP, debt_gdp = lag(debt)/GDP) %>%
+  filter(year >= 1997) 
 
 view(merged_df2)
 
