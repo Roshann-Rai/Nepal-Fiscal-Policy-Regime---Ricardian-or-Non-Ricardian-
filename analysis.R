@@ -94,9 +94,9 @@ break_index <- which(merged_df2$year == 2016)
 chow_test <- sctest(pb_gdp ~ debt_gdp, type = "Chow", data = merged_df2, point = break_index)
 print(chow_test)
 
-sctest(Fstats(pb_gdp ~ debt_gdp, data = df1, from = 0.15, to = 0.85), type = "supF")
+sctest(Fstats(pb_gdp ~ debt_gdp, data = merged_df2, from = 0.15, to = 0.85), type = "supF")
 
-t <- Fstats(pb_gdp ~ debt_gdp, data = df1, from = 0.15, to = 0.85) 
+t <- Fstats(pb_gdp ~ debt_gdp, data = merged_df2, from = 0.15, to = 0.85) 
 plot(t)
 
 # Dummy Variable
