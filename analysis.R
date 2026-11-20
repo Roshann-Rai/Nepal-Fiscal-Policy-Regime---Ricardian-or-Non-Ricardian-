@@ -80,7 +80,7 @@ plot1
 
 # Structural Breaks Bai - Perron
 ## h = 0.2 means 20% of sample are included in 1 segment
-break_yr <- breakpoints(debt_gdp ~ pb_gdp, data = merged_df2, h = 0.20)   # or h = 0.25
+break_yr <- breakpoints(pb_gdp ~ debt_gdp, data = merged_df2, h = 0.20)   # or h = 0.25
 summary(break_yr)
 plot(break_yr)
 
@@ -122,10 +122,78 @@ merged_df3 <- merged_df2 %>%
 # Because of fewer observations we select lag = 1.
 
 # Model
-pb <- lm(pb_gdp ~ break_yr + pb_lag + debt_lag + pb_dummy + debt_dummy, data = merged_df3)
-debt <- lm(debt_gdp ~ break_yr + pb_lag + debt_lag + pb_dummy + debt_dummy, data = merged_df3)
+# Baseline model without structural breaks
+pb <- lm(pb_gdp ~ pb_lag + debt_lag, data = merged_df3)
+debt <- lm(debt_gdp ~ pb_lag + debt_lag, data = merged_df3)
 summary(pb)
 summary(debt)
+
+# Model with structural breaks
+pb_brk <- lm(pb_gdp ~ break_yr + pb_lag + debt_lag + pb_dummy + debt_dummy, data = merged_df3)
+debt_brk <- lm(debt_gdp ~ break_yr + pb_lag + debt_lag + pb_dummy + debt_dummy, data = merged_df3)
+summary(pb_brk)
+summary(debt_brk)
+
+# Testing if the introduction of structural break improves the explanatory power of model
+anova(pb, pb_brk)
+anova(debt, debt_brk)
+# p-value < 0.05 so yes.
+
+# Stability Test
+# CUSUM Test
+# Stability test without structural breaks
+cusum_pb <- efp(pb_gdp ~ pb_lag + debt_lag, 
+                data = merged_df3,
+                type = "OLS-CUSUM")
+cusum_debt <- efp(debt_gdp ~ pb_lag + debt_lag, 
+                  data = merged_df3,
+                  type = "OLS-CUSUM")
+
+plot(cusum_pb)
+plot(cusum_debt)
+
+sctest(cusum_pb)
+sctest(cusum_debt)
+
+# Stability test with structural breaks
+cusum_pb_brk <- efp(pb_gdp ~ break_yr + pb_lag + debt_lag + pb_dummy + debt_dummy, 
+                data = merged_df3,
+                type = "OLS-CUSUM")
+cusum_debt_brk <- efp(debt_gdp ~ break_yr + pb_lag + debt_lag + pb_dummy + debt_dummy, 
+                  data = merged_df3,
+                  type = "OLS-CUSUM")
+
+plot(cusum_pb_brk)
+plot(cusum_debt_brk)
+
+sctest(cusum_pb_brk)
+sctest(cusum_debt_brk)
+
+# p > 0.05 for both, so failed to reject H0: Regression coefficients are stable over time.
+
+# VAR eigen value test (dynamic stability)
+# Baseline model
+# Construct coefficient matrix
+base_model <- rbind(
+  c(coef(pb)["pb_lag"], coef(pb)["debt_lag"]),
+  c(coef(debt)["pb_lag"], coef(debt)["debt_lag"])
+)
+
+# Eigenvalues
+roots_base <- eigen(base_model)$values
+
+# Modulus
+Mod(roots_base)
+
+# Stability condition
+all(Mod(roots_base) < 1)
+
+
+
+
+
+
+
 
 # pb_nobreak <- lm(pb_gdp ~ pb_lag + debt_lag, data = df2)
 
@@ -143,24 +211,24 @@ summary(debt)
 # print(chow_test)
 
 # Coefficnents
-coefs <- function(fit) {
-  b <- coef(fit)
-  data.frame(
-    period = c("Pre_2016", "Post_2016"),
-    Intercept = c(
-      b["(Intercept)"],
-      b["(Intercept)"]+b["break_yr"]
-    ),
-    pb = c(
-      b["pb_lag"],
-      b["pb_lag"]+b["pb_dummy"]
-    ),
-    debt = c(
-      b["debt_lag"],
-      b["debt_lag"]+b["debt_dummy"]
-    )
-  )
-}
+# coefs <- function(fit) {
+#   b <- coef(fit)
+#   data.frame(
+#     period = c("Pre_2016", "Post_2016"),
+#     Intercept = c(
+#       b["(Intercept)"],
+#       b["(Intercept)"]+b["break_yr"]
+#     ),
+#     pb = c(
+#       b["pb_lag"],
+#       b["pb_lag"]+b["pb_dummy"]
+#     ),
+#     debt = c(
+#       b["debt_lag"],
+#       b["debt_lag"]+b["debt_dummy"]
+#     )
+#   )
+# }
 
 pb_coefs <- coefs(pb)
 debt_coefs <- coefs(debt)
