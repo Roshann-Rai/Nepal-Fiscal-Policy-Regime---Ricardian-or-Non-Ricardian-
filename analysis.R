@@ -188,51 +188,32 @@ Mod(roots_base)
 # Stability condition
 all(Mod(roots_base) < 1)
 
+# Structural Break Model Eigen value test
+# Pre 2016
+pre_2016 <- rbind(
+  c(coef(pb_brk)["pb_lag"], coef(pb_brk)["debt_lag"]),
+  c(coef(debt_brk)["pb_lag"], coef(debt_brk)["debt_lag"])
+)
 
+roots_pre <- eigen(pre_2016)$values
 
+Mod(roots_pre)
 
+all(Mod(roots_pre)<1)
 
+# Post 2018
+A_post <- rbind(
+  c(
+    coef(pb_brk)["pb_lag"] + coef(pb_brk)["pb_dummy"],
+    coef(pb_brk)["debt_lag"] + coef(pb_brk)["debt_dummy"]
+  ),
+  c(
+    coef(debt_brk)["pb_lag"] + coef(debt_brk)["pb_dummy"],
+    coef(debt_brk)["debt_lag"] + coef(debt_brk)["debt_dummy"]
+  )
+)
 
+roots_post <- eigen(A_post)$values
 
-
-# pb_nobreak <- lm(pb_gdp ~ pb_lag + debt_lag, data = df2)
-
-# summary(pb_nobreak)
-
-# anova(pb, pb_nobreak)
-
-# anova(pb_nobreak, pb)
-# break_index <- which(df1$year == 2017)
-# chow_test <- sctest(pb_gdp ~ debt_gdp, type = "Chow", data = df1, point = break_index)
-# print(chow_test)
-
-# break_index <- which(df1$year == 2018)
-# chow_test <- sctest(pb_gdp ~ debt_gdp, type = "Chow", data = df1, point = break_index)
-# print(chow_test)
-
-# Coefficnents
-# coefs <- function(fit) {
-#   b <- coef(fit)
-#   data.frame(
-#     period = c("Pre_2016", "Post_2016"),
-#     Intercept = c(
-#       b["(Intercept)"],
-#       b["(Intercept)"]+b["break_yr"]
-#     ),
-#     pb = c(
-#       b["pb_lag"],
-#       b["pb_lag"]+b["pb_dummy"]
-#     ),
-#     debt = c(
-#       b["debt_lag"],
-#       b["debt_lag"]+b["debt_dummy"]
-#     )
-#   )
-# }
-
-pb_coefs <- coefs(pb)
-debt_coefs <- coefs(debt)
-
-pb_coefs
-debt_coefs
-
+Mod(roots_post)
+all(Mod(roots_post) < 1)
