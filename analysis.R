@@ -30,7 +30,7 @@ df1 <- df%>%
   mutate(
     pb = Revenue - Recurrent - Capital + Interest,
     pb_gdp = pb/GDP,
-    debt_gdp = lag(debt)/GDP
+    debt_gdp = lag(debt)/GDP # debt beginning of the year
   ) %>%
   filter(year >= 2003) %>%
   select(year, pb)
@@ -217,3 +217,31 @@ roots_post <- eigen(A_post)$values
 
 Mod(roots_post)
 all(Mod(roots_post) < 1)
+
+install.packages("car")
+library(car)
+
+# Post-2016 debt response in primary balance equation
+linearHypothesis(
+  pb_brk,
+  "debt_lag + debt_dummy = 0"
+)
+
+# Post-2016 primary balance persistence
+linearHypothesis(
+  pb_brk,
+  "pb_lag + pb_dummy = 0"
+)
+
+# Post-2016 debt persistence in debt equation
+linearHypothesis(
+  debt_brk,
+  "debt_lag + debt_dummy = 0"
+)
+
+# Post-2016 primary balance response in debt equation
+linearHypothesis(
+  debt_brk,
+  "pb_lag + pb_dummy = 0"
+)
+
