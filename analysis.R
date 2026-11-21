@@ -10,30 +10,31 @@ public_finance <- read.csv("https://raw.githubusercontent.com/Roshann-Rai/Nepal-
 debt <- read.csv("https://raw.githubusercontent.com/Roshann-Rai/Nepal-Fiscal-Policy-Regime---Ricardian-or-Non-Ricardian-/refs/heads/main/Data/debt.csv")
 data <- read.csv("https://raw.githubusercontent.com/Roshann-Rai/Nepal-Fiscal-Policy-Regime---Ricardian-or-Non-Ricardian-/refs/heads/main/Data/pb.csv")
 gdp <- read.csv("https://raw.githubusercontent.com/Roshann-Rai/Nepal-Fiscal-Policy-Regime---Ricardian-or-Non-Ricardian-/refs/heads/main/Data/gdp.csv")
+revenue <- read.csv("https://raw.githubusercontent.com/Roshann-Rai/Nepal-Fiscal-Policy-Regime---Ricardian-or-Non-Ricardian-/refs/heads/main/Data/revenue.csv")
 
 # Merge data
 df <- public_finance %>%
   rename(year = FY1) %>%
-  left_join(debt, by = "year") 
-
-df
+  left_join(debt, by = "year") %>%
+  left_join(revenue, by = "year") %>%
+  select(-GDP) %>%
+  left_join(gdp, by = "year")
 
 # Data Structure
 df$year = as.integer(df$year)
 
 df <- df%>%
-  mutate(across(c(Recurrent, Capital, Interest, Revenue, GDP), ~ as.numeric(gsub(",", "", .x))))
-df
+  mutate(across(c(Recurrent, Capital, Interest, Revenue, GDP), ~ as.numeric(gsub(",", "", .x)))) %>%
+  select(-Revenue)
 
 # Required Variables
 df1 <- df%>%
+  select(-FY) %>%
   mutate(
-    pb = Revenue - Recurrent - Capital + Interest,
-    pb_gdp = pb/GDP,
-    debt_gdp = lag(debt)/GDP # debt beginning of the year
-  ) %>%
-  filter(year >= 2003) %>%
-  select(year, pb)
+    pb = revenue - Recurrent - Capital + Interest
+    # pb_gdp = pb/GDP,
+    # debt_gdp = lag(debt)/GDP # debt beginning of the year
+  )
 
 view(df1)
 
@@ -44,39 +45,38 @@ df2 <- data %>%
 
 view(df2)
 
-# Merged data
+df3 <- df1 %>%
+  left_join(df2 %>%
+              select(year, df2_pb = pb), by = "year") %>%
+  mutate(pb = coalesce(pb, df2_pb)) %>%
+  select(year, debt, GDP, pb)
+view(df3)
+
+# 1996 data
 df_1996 <- data.frame(
   year = 1996,
-  pb = NA,
   debt = 160102.2,
-  GDP = 248913.0
+  GDP = 248913.0,
+  pb = NA
 )
-merged_df <- bind_rows(df2, df1) 
 
-merged_df1 <- merged_df %>%
-  left_join(debt, by = "year") %>%
-  left_join(gdp, by = "year")
+# Merge with df3
+merged_df <- bind_rows(df_1996, df3)
+str(merged_df)
 
-view(merged_df1)
-
-merged_df_1996 <- bind_rows(df_1996, merged_df1)
-view(merged_df_1996)
-
-# Required data
-merged_df_1996$year <- as.integer(merged_df_1996$year)
-
-merged_df2 <- merged_df_1996 %>%
+# Final Dataset
+merged_df2 <- merged_df %>%
   mutate(pb_gdp = pb/GDP, debt_gdp = lag(debt)/GDP) %>%
   filter(year >= 1997) 
 
 view(merged_df2)
 
-# Plot
-plot1 <- ggplot(merged_df2, aes(year)) +
-  # geom_line(aes(y = pb_gdp, color = "black")) +
-  geom_line(aes(y = debt_gdp, color = "red"))
-
-plot1
+# # Plot
+# plot1 <- ggplot(merged_df2, aes(year)) +
+#   # geom_line(aes(y = pb_gdp, color = "black")) +
+#   geom_line(aes(y = debt_gdp, color = "red"))
+# 
+# plot1
 
 # Structural Breaks Bai - Perron
 ## h = 0.2 means 20% of sample are included in 1 segment
@@ -217,31 +217,4 @@ roots_post <- eigen(A_post)$values
 
 Mod(roots_post)
 all(Mod(roots_post) < 1)
-
-install.packages("car")
-library(car)
-
-# Post-2016 debt response in primary balance equation
-linearHypothesis(
-  pb_brk,
-  "debt_lag + debt_dummy = 0"
-)
-
-# Post-2016 primary balance persistence
-linearHypothesis(
-  pb_brk,
-  "pb_lag + pb_dummy = 0"
-)
-
-# Post-2016 debt persistence in debt equation
-linearHypothesis(
-  debt_brk,
-  "debt_lag + debt_dummy = 0"
-)
-
-# Post-2016 primary balance response in debt equation
-linearHypothesis(
-  debt_brk,
-  "pb_lag + pb_dummy = 0"
-)
 
