@@ -66,6 +66,7 @@ str(merged_df)
 
 # Final Dataset
 merged_df2 <- merged_df %>%
+  arrange(year) %>%
   mutate(pb_gdp = pb/GDP, debt_gdp = lag(debt)/GDP) %>%
   filter(year >= 1997) 
 
