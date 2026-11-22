@@ -2,7 +2,7 @@ library(tidyverse)
 library(dplyr)
 library(xts)
 library(strucchange)
-
+library(vars)
 # setwd("https://github.com/Roshann-Rai/Nepal-Fiscal-Policy-Regime---Ricardian-or-Non-Ricardian-/Data")
 
 # Data
@@ -17,7 +17,7 @@ df <- public_finance %>%
   rename(year = FY1) %>%
   left_join(debt, by = "year") %>%
   left_join(revenue, by = "year") %>%
-  select(-GDP) %>%
+  dplyr::select(-GDP) %>%
   left_join(gdp, by = "year")
 
 # Data Structure
@@ -25,11 +25,11 @@ df$year = as.integer(df$year)
 
 df <- df%>%
   mutate(across(c(Recurrent, Capital, Interest, Revenue, GDP), ~ as.numeric(gsub(",", "", .x)))) %>%
-  select(-Revenue)
+  dplyr::select(-Revenue)
 
 # Required Variables
 df1 <- df%>%
-  select(-FY) %>%
+  dplyr::select(-FY) %>%
   mutate(
     pb = revenue - Recurrent - Capital + Interest
     # pb_gdp = pb/GDP,
@@ -41,7 +41,7 @@ view(df1)
 df2 <- data %>%
   rename(year = FY1) %>%
   mutate(pb = -(PB_1 - grant)) %>%
-  select(year, pb)
+  dplyr::select(year, pb)
 
 view(df2)
 
@@ -49,7 +49,8 @@ df3 <- df1 %>%
   left_join(df2 %>%
               select(year, df2_pb = pb), by = "year") %>%
   mutate(pb = coalesce(pb, df2_pb)) %>%
-  select(year, debt, GDP, pb)
+  dplyr::select(year, debt, GDP, pb)
+
 view(df3)
 
 # 1996 data
@@ -128,6 +129,44 @@ pb <- lm(pb_gdp ~ pb_lag + debt_lag, data = merged_df3)
 debt <- lm(debt_gdp ~ pb_lag + debt_lag, data = merged_df3)
 summary(pb)
 summary(debt)
+
+df_var <- VAR(
+  merged_df3 %>% dplyr::select(pb_gdp, debt_gdp),
+  p = 1,
+  type = "const"
+)
+  
+summary(df_var)
+
+# Impulse response:
+# Response of liabilities (w) to a shock in primary surplus (s)
+
+irf_1 <- irf(
+  df_var,
+  impulse = "pb_gdp",
+  response = "debt_gdp",
+  n.ahead = 15,
+  boot = TRUE,
+  runs = 1000,
+  ci = 0.95
+)
+
+
+# Plot
+h   <- 0:15
+est <- irf_1$irf$pb_gdp[, "pb_gdp"]
+lo  <- irf_1$Lower$pb_gdp[, "pb_gdp"]
+up  <- irf_1$Upper$pb_gdp[, "pb_gdp"]
+
+plot(h, est, type = "l", lwd = 2,
+     xlim = c(0, 15), ylim = range(lo, up),
+     xaxs = "i",                      # no padding on the x-axis
+     xlab = "Horizon", ylab = "pb_gdp",
+     main = "Orthogonal IRF: pb_gdp → pb_gdp\n95% bootstrap CI, 1000 runs")
+lines(h, lo, col = "red", lty = 2)
+lines(h, up, col = "red", lty = 2)
+abline(h = 0, col = "red")
+
 
 # Model with structural breaks
 pb_brk <- lm(pb_gdp ~ break_yr + pb_lag + debt_lag + pb_dummy + debt_dummy, data = merged_df3)
