@@ -47,7 +47,7 @@ view(df2)
 
 df3 <- df1 %>%
   left_join(df2 %>%
-              select(year, df2_pb = pb), by = "year") %>%
+              dplyr::select(year, df2_pb = pb), by = "year") %>%
   mutate(pb = coalesce(pb, df2_pb)) %>%
   dplyr::select(year, debt, GDP, pb)
 
@@ -130,43 +130,99 @@ debt <- lm(debt_gdp ~ pb_lag + debt_lag, data = merged_df3)
 summary(pb)
 summary(debt)
 
+# Ordering pb then debt
+
 df_var <- VAR(
   merged_df3 %>% dplyr::select(pb_gdp, debt_gdp),
   p = 1,
   type = "const"
 )
-  
-summary(df_var)
 
 # Impulse response:
-# Response of liabilities (w) to a shock in primary surplus (s)
-
-irf_1 <- irf(
+# Response of debt to a shock in primary balance
+irf_pb <- irf(
   df_var,
   impulse = "pb_gdp",
   response = "debt_gdp",
   n.ahead = 15,
+  ortho = TRUE,
   boot = TRUE,
   runs = 1000,
   ci = 0.95
 )
 
+#Response of primary balance to a shock in debt
+irf_debt <- irf(
+  df_var,
+  impulse = "debt_gdp",
+  response = "pb_gdp",
+  n.ahead = 15,
+  ortho = TRUE,
+  boot = TRUE,
+  runs = 1000,
+  ci = 0.95
+)
 
-# Plot
-h   <- 0:15
-est <- irf_1$irf$pb_gdp[, "pb_gdp"]
-lo  <- irf_1$Lower$pb_gdp[, "pb_gdp"]
-up  <- irf_1$Upper$pb_gdp[, "pb_gdp"]
+# Ordering debt then pb
 
-plot(h, est, type = "l", lwd = 2,
-     xlim = c(0, 15), ylim = range(lo, up),
+df_var1 <- VAR(
+  merged_df3 %>% dplyr::select(debt_gdp, pb_gdp),
+  p = 1,
+  type = "const"
+)
+
+# Impulse response:
+# Response of debt to a shock in primary balance
+irf_pb1 <- irf(
+  df_var1,
+  impulse = "pb_gdp",
+  response = "debt_gdp",
+  n.ahead = 15,
+  ortho = TRUE,
+  boot = TRUE,
+  runs = 1000,
+  ci = 0.95
+)
+
+#Response of primary balance to a shock in debt
+irf_debt1 <- irf(
+  df_var1,
+  impulse = "debt_gdp",
+  response = "pb_gdp",
+  n.ahead = 15,
+  ortho = TRUE,
+  boot = TRUE,
+  runs = 1000,
+  ci = 0.95
+)
+
+par(mfrow = c(2, 2))
+plot(irf_pb,
+     xlim = c(0, 15),
      xaxs = "i",                      # no padding on the x-axis
-     xlab = "Horizon", ylab = "pb_gdp",
-     main = "Orthogonal IRF: pb_gdp → pb_gdp\n95% bootstrap CI, 1000 runs")
-lines(h, lo, col = "red", lty = 2)
-lines(h, up, col = "red", lty = 2)
-abline(h = 0, col = "red")
+     yaxs = "i",
+     xlab = "Horizon")
+plot(irf_debt,
+     xlim = c(0, 15),
+     xaxs = "i",                      # no padding on the x-axis
+     yaxs = "i",
+     xlab = "Horizon")
 
+plot(irf_pb1,
+     xlim = c(0, 15),
+     xaxs = "i",                      # no padding on the x-axis
+     yaxs = "i",
+     xlab = "Horizon")
+plot(irf_debt1,
+     xlim = c(0, 15),
+     xaxs = "i",                      # no padding on the x-axis
+     yaxs = "i",
+     xlab = "Horizon")
+
+# abline(h = 0, col = "red")
+# abline(v = 0, col = "black")
+
+par(mfrow = c(1, 1))
 
 # Model with structural breaks
 pb_brk <- lm(pb_gdp ~ break_yr + pb_lag + debt_lag + pb_dummy + debt_dummy, data = merged_df3)
